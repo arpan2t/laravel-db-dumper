@@ -34,21 +34,19 @@ class DumpDatabaseCommand extends Command
         }
 
 
-        $files = glob($directory . DIRECTORY_SEPARATOR . 'dump-*.sql');
+        $files = glob(
+            $directory . DIRECTORY_SEPARATOR . 'dump-*.sql'
+        );
 
         if (!$files) {
             return;
         }
 
         usort($files, function ($a, $b) {
-            return filemtime($a) <=> filemtime($b);
+            return filemtime($b) - filemtime($a);
         });
 
-        $filesToDelete = array_slice(
-            $files,
-            0,
-            max(0, count($files) - $maxDumps)
-        );
+        $filesToDelete = array_slice($files, $maxDumps);
 
         foreach ($filesToDelete as $file) {
             unlink($file);
