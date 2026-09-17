@@ -1,5 +1,5 @@
 {
-    "name": "arpan/laravel-db-dumper",
+    "name": "arpanbhattarai/laravel-db-dumper",
     "description": "A Laravel package for dumping MySQL databases.",
     "type": "library",
     "license": "MIT",
