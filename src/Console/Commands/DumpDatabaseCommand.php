@@ -3,7 +3,7 @@
 namespace Arpan\DatabaseDumper\Console\Commands;
 
 use Arpan\DatabaseDumper\Database\DatabaseDumper;
-use Arpanbhattarai\DatabaseDumper\Storage\BackupStorage;
+use Arpan\DatabaseDumper\Storage\BackupStorage;
 use Illuminate\Console\Command;
 
 class DumpDatabaseCommand extends Command

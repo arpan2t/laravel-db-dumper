@@ -1,6 +1,6 @@
 <?php
 
-namespace Arpanbhattarai\DatabaseDumper\Storage;
+namespace Arpan\DatabaseDumper\Storage;
 
 use Illuminate\Contracts\Filesystem\Filesystem;
 

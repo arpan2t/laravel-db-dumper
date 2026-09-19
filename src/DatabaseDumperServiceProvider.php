@@ -6,7 +6,7 @@ use Arpan\DatabaseDumper\Console\Commands\DumpDatabaseCommand;
 use Arpan\DatabaseDumper\Database\DatabaseDumper;
 use Arpan\DatabaseDumper\Database\Drivers\MySqlDumper;
 use Arpan\DatabaseDumper\Security\SecureTemporaryFile;
-use Arpanbhattarai\DatabaseDumper\Storage\BackupStorage;
+use Arpan\DatabaseDumper\Storage\BackupStorage;
 use Illuminate\Filesystem\FilesystemManager;
 use Illuminate\Support\ServiceProvider;
 
