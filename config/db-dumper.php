@@ -1,6 +1,7 @@
 <?php
 
 return [
-    'path' => storage_path('app/database-dumps'),
+    'disk' => 'local',  //for s3 => 's3'
+    'path' => 'database-dumps',
     'max_dumps' => -1
 ];

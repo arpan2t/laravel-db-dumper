@@ -13,11 +13,19 @@ class DatabaseDumper
         $this->mysqlDumper = $mysqlDumper;
     }
 
-    public function dump(array $config, $outputPath)
+    public function dump($database, $outputPath)
     {
-        return $this->mysqlDumper->dump(
-            $config,
-            $outputPath
-        );
+        if ($database === "mysql") {
+            $config = config('database.connections.mysql');
+            return $this->mysqlDumper->dump(
+                $config,
+                $outputPath
+            );
+        }
+    }
+
+    public function getExtension($database)
+    {
+        if ($database === "mysql") return 'sql';
     }
 }

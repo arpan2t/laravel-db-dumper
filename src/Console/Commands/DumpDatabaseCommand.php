@@ -3,6 +3,7 @@
 namespace Arpan\DatabaseDumper\Console\Commands;
 
 use Arpan\DatabaseDumper\Database\DatabaseDumper;
+use Arpanbhattarai\DatabaseDumper\Storage\BackupStorage;
 use Illuminate\Console\Command;
 
 class DumpDatabaseCommand extends Command
@@ -11,12 +12,14 @@ class DumpDatabaseCommand extends Command
     protected $signature = 'db:dump {--database=mysql : Database driver to dump}';
     protected $description = 'Dumping the Mysql database';
     protected $dumper;
+    protected $storage;
 
-    public function __construct(DatabaseDumper $dumper)
+    public function __construct(DatabaseDumper $dumper, BackupStorage $storage)
     {
         parent::__construct();
 
         $this->dumper = $dumper;
+        $this->storage = $storage;
     }
 
     protected function cleanupOldDumps($directory)
@@ -57,7 +60,7 @@ class DumpDatabaseCommand extends Command
     public function handle()
     {
 
-        $database = $this->option('database');
+        $database = $this->option('database') ?? "mysql";
 
         if ($database !== 'mysql') {
             $this->error(
@@ -75,24 +78,31 @@ class DumpDatabaseCommand extends Command
 
         $config = config('database.connections.mysql');
 
-        $directory = config('db-dumper.path');
+        $directory = trim(config('db-dumper.path', 'database-dumps'), '/');
 
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+        $extension = $this->dumper->getExtension($database);
+
+        $filename = 'dump-' . date('Y-m-d-H-i-s') . '-' . uniqid() . '.' . $extension;
+
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'db-dumper-');
+
+        if ($temporaryPath === false) {
+            $this->error('Unable to create temporary dump file.');
+            return 1;
         }
+        $storagePath = $directory ? $directory . '/' . $filename : $filename;
 
-        $filename = 'dump-' . date('Y-m-d-H-i-s') . '.sql';
-
-        $outputPath = $directory . DIRECTORY_SEPARATOR . $filename;
 
         try {
-            $this->dumper->dump($config, $outputPath);
+            $this->dumper->dump($database , $temporaryPath);
 
-            $this->cleanupOldDumps($directory);
+            $this->storage->store($temporaryPath, $storagePath);
+
+            $this->storage->cleanupOldDumps( $directory, config('db-dumper.max_dumps') );
 
             $this->info('Database dump completed successfully.');
 
-            $this->line('File: ' . $outputPath);
+            $this->line('File: ' . $storagePath);
 
             return 0;
         } catch (\Exception $e) {
