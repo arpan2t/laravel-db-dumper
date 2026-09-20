@@ -2,9 +2,11 @@
 
 namespace Arpan\DatabaseDumper\Console\Commands;
 
+use Arpan\DatabaseDumper\Compression\BackupCompressor;
 use Arpan\DatabaseDumper\Database\DatabaseDumper;
 use Arpan\DatabaseDumper\Storage\BackupStorage;
 use Illuminate\Console\Command;
+use PSpell\Config;
 
 class DumpDatabaseCommand extends Command
 {
@@ -13,49 +15,16 @@ class DumpDatabaseCommand extends Command
     protected $description = 'Dumping the Mysql database';
     protected $dumper;
     protected $storage;
+    protected $compressor;
 
-    public function __construct(DatabaseDumper $dumper, BackupStorage $storage)
+    public function __construct(DatabaseDumper $dumper, BackupStorage $storage, BackupCompressor $compressor)
     {
         parent::__construct();
 
         $this->dumper = $dumper;
         $this->storage = $storage;
+        $this->compressor = $compressor;
     }
-
-    protected function cleanupOldDumps($directory)
-    {
-        $maxDumps = config('db-dumper.max_dumps');
-
-        if ($maxDumps === -1) {
-            return;
-        }
-
-        if ($maxDumps < 1) {
-            throw new \RuntimeException(
-                'db-dumper.max_dumps must be -1 or a positive integer.'
-            );
-        }
-
-
-        $files = glob(
-            $directory . DIRECTORY_SEPARATOR . 'dump-*.sql'
-        );
-
-        if (!$files) {
-            return;
-        }
-
-        usort($files, function ($a, $b) {
-            return filemtime($b) - filemtime($a);
-        });
-
-        $filesToDelete = array_slice($files, $maxDumps);
-
-        foreach ($filesToDelete as $file) {
-            unlink($file);
-        }
-    }
-
 
     public function handle()
     {
@@ -78,27 +47,53 @@ class DumpDatabaseCommand extends Command
 
         $config = config('database.connections.mysql');
 
+        $compress = config('db-dumper.compress', false);
+
         $directory = trim(config('db-dumper.path', 'database-dumps'), '/');
 
         $extension = $this->dumper->getExtension($database);
 
         $filename = 'dump-' . date('Y-m-d-H-i-s') . '-' . uniqid() . '.' . $extension;
 
-        $temporaryPath = tempnam(sys_get_temp_dir(), 'db-dumper-');
-
-        if ($temporaryPath === false) {
-            $this->error('Unable to create temporary dump file.');
-            return 1;
+        if ($compress === true) {
+            $filename = $filename . '.zip';
         }
         $storagePath = $directory ? $directory . '/' . $filename : $filename;
 
+        $temporarySqlPath = null;
+        $temporaryZipPath = null;
 
         try {
-            $this->dumper->dump($database , $temporaryPath);
+
+            $temporarySqlPath = tempnam(sys_get_temp_dir(), 'db-dumper-');
+
+            if ($temporarySqlPath === false) {
+                throw new \RuntimeException(
+                    'Unable to create temporary SQL file.'
+                );
+            }
+            $this->dumper->dump($database, $temporarySqlPath);
+
+            $temporaryPath = $temporarySqlPath;
+
+            if ($compress) {
+                $temporaryZipPath = tempnam(sys_get_temp_dir(), 'db-dumper-');
+                if ($temporaryZipPath === false) {
+                    throw new \RuntimeException(
+                        'Unable to create temporary ZIP file.'
+                    );
+                }
+                $this->compressor->compress(
+                    $temporarySqlPath,
+                    $temporaryZipPath
+                );
+
+                $temporaryPath = $temporaryZipPath;
+            }
 
             $this->storage->store($temporaryPath, $storagePath);
 
-            $this->storage->cleanupOldDumps( $directory, config('db-dumper.max_dumps') );
+            $this->storage->cleanupOldDumps($directory, config('db-dumper.max_dumps'));
 
             $this->info('Database dump completed successfully.');
 

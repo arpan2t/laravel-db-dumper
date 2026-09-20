@@ -3,5 +3,6 @@
 return [
     'disk' => 'local',  //for s3 => 's3'
     'path' => 'database-dumps',
-    'max_dumps' => -1
+    'compress' => false, 
+    'max_dumps' => -1,
 ];
