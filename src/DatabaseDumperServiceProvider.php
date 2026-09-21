@@ -49,11 +49,9 @@ class DatabaseDumperServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                DumpDatabaseCommand::class,
-            ]);
-        }
+        $this->commands([
+            DumpDatabaseCommand::class,
+        ]);
 
         $this->publishes([
             __DIR__ . '/../config/db-dumper.php'
