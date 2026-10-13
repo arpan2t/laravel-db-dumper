@@ -13,10 +13,9 @@ class DatabaseDumper
         $this->mysqlDumper = $mysqlDumper;
     }
 
-    public function dump($database, $outputPath)
+    public function dump($database, $config, $outputPath)
     {
         if ($database === "mysql") {
-            $config = config('database.connections.mysql');
             return $this->mysqlDumper->dump(
                 $config,
                 $outputPath
